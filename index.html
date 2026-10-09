@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTX Institutional Quantitative Trading System v5.2</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bank: {
+                            bg: '#0b0f17',
+                            card: '#131b2c',
+                            cardHover: '#1a233a',
+                            border: '#22304a',
+                            gold: '#d4af37',
+                            goldHover: '#e5c158',
+                            emerald: '#2ea043',
+                            emeraldHover: '#3fb950',
+                            accent: '#1f6feb',
+                            text: '#c9d1d9',
+                            muted: '#8b949e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- External stylesheet (no inline CSS) -->
+    <link rel="stylesheet" href="css/btx-premium.css">
+</head>
+<body class="bg-bank-bg text-bank-text min-h-screen flex flex-col selection:bg-bank-gold selection:text-black">
+<a class="btx-skip" href="#main-content">Skip to main content</a>
+
+    <!-- Authentication Portal Overlay -->
+    <div id="auth-portal" role="dialog" aria-modal="true" aria-label="Sign in to BTX Terminal" class="fixed inset-0 bg-bank-bg/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-bank-card border border-bank-border rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-6 glow-gold">
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-bank-gold to-yellow-700 flex items-center justify-center text-black font-bold text-2xl shadow-lg">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h2 class="text-2xl font-bold tracking-wider text-white">BTX QUANT TERMINAL</h2>
+                <p class="text-xs text-bank-muted">Institutional SMC & Multi-Asset Quantitative Engine</p>
+            </div>
+
+            <!-- Auth Tabs -->
+            <div class="flex bg-bank-bg p-1 rounded-xl border border-bank-border">
+                <button onclick="switchAuthMode('login')" id="btn-auth-login" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-bank-gold text-black shadow">Secure Login</button>
+                <button onclick="switchAuthMode('register')" id="btn-auth-register" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-bank-muted hover:text-white">Register Account</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="form-login" onsubmit="handleAuthSubmit(event, 'login')" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-xs text-bank-muted mb-1">Institutional Email / ID</label>
+                    <input type="email" id="login-email" autocomplete="username" required value="quant.lead@btx-capital.com" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold font-mono">
+                </div>
+                <div>
+                    <label for="login-pass" class="block text-xs text-bank-muted mb-1">Master Password / 2FA Token</label>
+                    <input type="password" id="login-pass" autocomplete="current-password" required value="SecretPass2026!" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold font-mono">
+                </div>
+                <button type="submit" class="w-full bg-bank-gold hover:bg-bank-goldHover text-black font-bold py-3 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock"></i> Authenticate Session
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" onsubmit="handleAuthSubmit(event, 'register')" class="space-y-4 hidden">
+                <div>
+                    <label for="reg-name" class="block text-xs text-bank-muted mb-1">Full Name</label>
+                    <input type="text" id="reg-name" autocomplete="name" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold">
+                </div>
+                <div>
+                    <label for="reg-email" class="block text-xs text-bank-muted mb-1">Corporate Email</label>
+                    <input type="email" id="reg-email" autocomplete="email" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold">
+                </div>
+                <div>
+                    <label for="reg-pass" class="block text-xs text-bank-muted mb-1">Create Secure Password</label>
+                    <input type="password" id="reg-pass" autocomplete="new-password" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold">
+                </div>
+                <button type="submit" class="w-full bg-bank-emerald hover:bg-bank-emeraldHover text-black font-bold py-3 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Provision Account
+                </button>
+            </form>
+
+            <div class="text-center text-[10px] text-bank-muted">
+                Protected by 256-bit AES Bank-Grade Encryption & TLS 1.3 FIX Gateway.
+            </div>
+        </div>
+    </div>
+
+    <!-- Operational Mode Selector Modal -->
+    <div id="mode-selector-modal" role="dialog" aria-modal="true" aria-label="Select operational mode" class="fixed inset-0 bg-bank-bg/95 backdrop-blur-md z-[45] hidden flex items-center justify-center p-4">
+        <div class="bg-bank-card border border-bank-border rounded-2xl p-8 max-w-3xl w-full shadow-2xl space-y-6 glow-emerald">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl font-bold tracking-wider text-white">SELECT OPERATIONAL MODE PORTAL</h2>
+                <p class="text-xs text-bank-muted">Choose your institutional clearance level and designated trading architecture.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Hedge Fund Mode -->
+                <div role="button" tabindex="0" onclick="selectOperationalMode('hedge')" class="bg-bank-bg border border-bank-border hover:border-bank-gold p-5 rounded-xl cursor-pointer transition-all space-y-3 group shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-lg bg-bank-gold/10 text-bank-gold flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <span class="text-[10px] bg-bank-gold/10 text-bank-gold px-2 py-0.5 rounded font-mono font-semibold">Tier 1 Institutional</span>
+                    </div>
+                    <h3 class="text-white font-bold group-hover:text-bank-gold transition-colors">Hedge Fund Mode</h3>
+                    <p class="text-xs text-bank-muted leading-relaxed">Multi-asset macro allocation, alpha generation metrics, VaR stress testing, and institutional fund performance metrics.</p>
+                </div>
+
+                <!-- Bank Mode -->
+                <div role="button" tabindex="0" onclick="selectOperationalMode('bank')" class="bg-bank-bg border border-bank-border hover:border-bank-gold p-5 rounded-xl cursor-pointer transition-all space-y-3 group shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-building-columns"></i>
+                        </div>
+                        <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-mono font-semibold">Treasury Clearance</span>
+                    </div>
+                    <h3 class="text-white font-bold group-hover:text-blue-400 transition-colors">Bank Mode</h3>
+                    <p class="text-xs text-bank-muted leading-relaxed">Treasury liquidity management, risk exposure matrices, interbank FIX routing, and regulatory compliance audit logs.</p>
+                </div>
+
+                <!-- Retail Trader Mode -->
+                <div role="button" tabindex="0" onclick="selectOperationalMode('retail')" class="bg-bank-bg border border-bank-border hover:border-bank-emerald p-5 rounded-xl cursor-pointer transition-all space-y-3 group shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-lg bg-bank-emerald/10 text-bank-emerald flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-laptop-code"></i>
+                        </div>
+                        <span class="text-[10px] bg-bank-emerald/10 text-bank-emerald px-2 py-0.5 rounded font-mono font-semibold">Algo & SMC Bot</span>
+                    </div>
+                    <h3 class="text-white font-bold group-hover:text-bank-emerald transition-colors">Retail Trader Mode</h3>
+                    <p class="text-xs text-bank-muted leading-relaxed">Advanced retail algorithmic dashboard, single/multi-pair execution, automated grid/SMC bots, and equity curve tracking.</p>
+                </div>
+
+                <!-- Admin Section -->
+                <div role="button" tabindex="0" onclick="selectOperationalMode('admin')" class="bg-bank-bg border border-bank-border hover:border-rose-500 p-5 rounded-xl cursor-pointer transition-all space-y-3 group shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <span class="text-[10px] bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded font-mono font-semibold">Super-Admin</span>
+                    </div>
+                    <h3 class="text-white font-bold group-hover:text-rose-400 transition-colors">Admin Section</h3>
+                    <p class="text-xs text-bank-muted leading-relaxed">Dedicated super-admin portal for managing active user licenses, broker gateway connections, and system-wide kill switches.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-bank-card border-b border-bank-border px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-bank-gold to-yellow-700 flex items-center justify-center text-black font-bold text-xl shadow-md">
+                <i class="fa-solid fa-bolt text-black"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wider text-white flex items-center gap-2">
+                    BTX <span id="portal-title-badge" class="text-bank-gold font-light text-sm bg-bank-border/50 px-2 py-0.5 rounded">HEDGE FUND PORTAL</span>
+                </h1>
+                <p class="text-xs text-bank-muted">Institutional SMC & Mean-Variance Optimization Engine</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <div class="hidden md:flex items-center space-x-4 text-sm">
+                <div id="fix-status-badge" class="flex items-center space-x-2 bg-bank-bg px-3 py-1.5 rounded-lg border border-bank-border cursor-pointer" onclick="switchNavTab('tab-brokers')" title="Click to configure Brokers">
+                    <span id="fix-indicator" class="w-2.5 h-2.5 rounded-full bg-bank-emerald animate-pulse"></span>
+                    <span class="text-bank-muted text-xs">Broker FIX:</span>
+                    <span id="fix-text" class="text-xs font-mono text-bank-emerald font-semibold">CONNECTED (11ms)</span>
+                </div>
+                <div class="flex items-center space-x-2 bg-bank-bg px-3 py-1.5 rounded-lg border border-bank-border">
+                    <span class="text-bank-muted text-xs">UTC Time:</span>
+                    <span id="utc-clock" class="font-mono text-xs text-white font-medium">00:00:00</span>
+                </div>
+            </div>
+            
+            <!-- Logout Button -->
+            <button onclick="logoutSystem()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white font-bold text-xs px-3.5 py-2 rounded-lg border border-rose-500/50 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-power-off"></i> Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- Metrics Summary Bar -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-bank-bg">
+        <div class="bg-bank-card border border-bank-border p-4 rounded-xl shadow-md hover:border-bank-gold/50 transition-all">
+            <div class="flex justify-between items-start">
+                <span class="text-xs text-bank-muted font-medium uppercase tracking-wider">Total Portfolio Equity</span>
+                <span class="text-bank-emerald text-xs font-semibold bg-bank-emerald/10 px-2 py-0.5 rounded">+3.42%</span>
+            </div>
+            <div id="metric-equity" class="text-2xl font-bold font-mono text-white mt-2">$1,248,590.42</div>
+            <div class="text-xs text-bank-muted mt-1">Margin Utilization: <span class="text-white font-mono">18.4%</span></div>
+        </div>
+        <div class="bg-bank-card border border-bank-border p-4 rounded-xl shadow-md hover:border-bank-gold/50 transition-all">
+            <div class="flex justify-between items-start">
+                <span class="text-xs text-bank-muted font-medium uppercase tracking-wider">Active Sharpe Ratio</span>
+                <span class="text-bank-gold text-xs font-semibold bg-bank-gold/10 px-2 py-0.5 rounded">Optimal</span>
+            </div>
+            <div id="metric-sharpe" class="text-2xl font-bold font-mono text-white mt-2">2.84</div>
+            <div class="text-xs text-bank-muted mt-1">Sortino: <span class="text-white font-mono">3.41</span> | Vol: <span class="text-white font-mono">6.2%</span></div>
+        </div>
+        <div class="bg-bank-card border border-bank-border p-4 rounded-xl shadow-md hover:border-bank-gold/50 transition-all">
+            <div class="flex justify-between items-start">
+                <span class="text-xs text-bank-muted font-medium uppercase tracking-wider">Value at Risk (99% VaR)</span>
+                <span class="text-rose-400 text-xs font-semibold bg-rose-500/10 px-2 py-0.5 rounded">-1.1% Limit</span>
+            </div>
+            <div id="metric-var" class="text-2xl font-bold font-mono text-rose-400 mt-2">$14,230.00</div>
+            <div class="text-xs text-bank-muted mt-1">Max Drawdown (YTD): <span class="text-white font-mono">2.1%</span></div>
+        </div>
+        <div class="bg-bank-card border border-bank-border p-4 rounded-xl shadow-md hover:border-bank-gold/50 transition-all">
+            <div class="flex justify-between items-start">
+                <span class="text-xs text-bank-muted font-medium uppercase tracking-wider">SMC Institutional Status</span>
+                <span class="text-bank-emerald text-xs font-semibold bg-bank-emerald/10 px-2 py-0.5 rounded">Active Signal</span>
+            </div>
+            <div id="metric-smc" class="text-sm font-bold text-bank-gold mt-2 flex items-center gap-2">
+                <i class="fa-solid fa-crosshairs"></i> FVG DISCOUNT ZONE
+            </div>
+            <div class="text-xs text-bank-muted mt-1">Mitigation Rate: <span class="text-white font-mono">84.2%</span></div>
+        </div>
+    </section>
+
+    <!-- Main Content Tabs -->
+    <main id="main-content" tabindex="-1" class="flex-1 px-6 pb-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between border-b border-bank-border pb-4 gap-4">
+            <div class="flex flex-wrap space-x-2 bg-bank-card p-1 rounded-xl border border-bank-border gap-y-2">
+                <button onclick="switchNavTab('tab-smc')" id="btn-tab-smc" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-bank-gold text-black shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-chart-candlestick"></i> SMC Chart & Zones
+                </button>
+                <button onclick="switchNavTab('tab-brokers')" id="btn-tab-brokers" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-bank-muted hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-server"></i> Broker List & MT5
+                </button>
+                <button onclick="switchNavTab('tab-portfolio')" id="btn-tab-portfolio" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-bank-muted hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced"></i> Portfolio Optimizer
+                </button>
+                <button onclick="switchNavTab('tab-execution')" id="btn-tab-execution" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-bank-muted hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-terminal"></i> Execution Blotter
+                </button>
+                <button onclick="switchNavTab('tab-admin')" id="btn-tab-admin" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-bank-muted hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield"></i> Admin Portal
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <label for="asset-selector" class="text-xs text-bank-muted font-medium">Asset Feed:</label>
+                <select id="asset-selector" onchange="changeAsset(this.value)" class="bg-bank-card border border-bank-border text-white text-sm rounded-lg px-4 py-2 focus:outline-none focus:border-bank-gold font-mono">
+                    <option value="XAUUSD">XAUUSD (Gold Spot)</option>
+                    <option value="EURUSD">EURUSD (Major FX)</option>
+                    <option value="BTCUSD">BTCUSD (Crypto Perp)</option>
+                    <option value="US30">US30 (Wall St Index)</option>
+                </select>
+                <button onclick="triggerKillSwitch()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2 border border-rose-500">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Kill Switch
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: SMC Price Action & Quantitative Zones -->
+        <div id="tab-smc" class="tab-content grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Chart Container -->
+            <div class="lg:col-span-3 bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl flex flex-col">
+                <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+                    <div>
+                        <h2 id="chart-title" class="text-lg font-bold text-white">XAUUSD - M15 Quantitative SMC Stream</h2>
+                        <p class="text-xs text-bank-muted">Mathematical Order Blocks & Fair Value Gaps (FVG) detection in real-time</p>
+                    </div>
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="flex items-center gap-1.5 text-bank-gold font-mono"><span class="w-3 h-3 bg-bank-gold/30 border border-bank-gold rounded"></span> Bullish FVG Zone</span>
+                        <span class="flex items-center gap-1.5 text-rose-400 font-mono"><span class="w-3 h-3 bg-rose-500/30 border border-rose-500 rounded"></span> Bearish FVG Zone</span>
+                    </div>
+                </div>
+                <div class="relative flex-1 min-h-[420px] w-full">
+                    <canvas id="smcChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Quantitative SMC Analytics Panel -->
+            <div class="bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-4">
+                <div>
+                    <h3 class="text-md font-bold text-white border-b border-bank-border pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-bank-gold"></i> SMC Quant Matrix
+                    </h3>
+                    
+                    <div class="mt-4 space-y-4 text-sm">
+                        <div class="bg-bank-bg p-3 rounded-xl border border-bank-border">
+                            <div class="text-xs text-bank-muted">Current Structure (BOS / ChoCH)</div>
+                            <div id="smc-structure" class="text-sm font-bold text-bank-emerald mt-1">BULLISH EXPANSION</div>
+                        </div>
+                        <div class="bg-bank-bg p-3 rounded-xl border border-bank-border">
+                            <div class="text-xs text-bank-muted">Active Fair Value Gap (FVG)</div>
+                            <div id="smc-fvg-range" class="text-xs font-mono text-bank-gold mt-1">2,034.50 - 2,038.20</div>
+                        </div>
+                        <div class="bg-bank-bg p-3 rounded-xl border border-bank-border">
+                            <div class="text-xs text-bank-muted">Institutional Order Block (OB)</div>
+                            <div id="smc-ob-range" class="text-xs font-mono text-white mt-1">2,028.10 (Demand Zone)</div>
+                        </div>
+                        <div class="bg-bank-bg p-3 rounded-xl border border-bank-border">
+                            <div class="text-xs text-bank-muted">Liquidity Pool Target</div>
+                            <div id="smc-liq-target" class="text-xs font-mono text-cyan-400 mt-1">2,055.00 (EQH Sweep)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-bank-border">
+                    <button onclick="executeAlgorithmicOrder('BUY')" class="w-full bg-bank-emerald hover:bg-bank-emeraldHover text-black font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-arrow-trend-up"></i> Auto-Execute SMC Long
+                    </button>
+                    <button onclick="executeAlgorithmicOrder('SELL')" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-arrow-trend-down"></i> Auto-Execute SMC Short
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: MT5 Broker Connection & Supported Brokers List -->
+        <div id="tab-brokers" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Supported Brokers List Column -->
+            <div class="bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl space-y-4">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-bank-gold"></i> Supported Brokers List
+                    </h3>
+                    <p class="text-xs text-bank-muted mt-1">Select an institutional broker preset to load server credentials.</p>
+                </div>
+
+                <div id="broker-list-container" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Configuration & Telemetry Column -->
+            <div class="lg:col-span-2 bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-server text-bank-emerald"></i> Active MT5 / FIX Bridge Configuration
+                    </h3>
+                    <p class="text-xs text-bank-muted mt-1">Test connectivity and authenticate against selected institutional broker.</p>
+                </div>
+
+                <form onsubmit="testMT5Connection(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="cfg-broker-name" class="block text-xs text-bank-muted mb-1">Selected Broker Name</label>
+                        <input type="text" id="cfg-broker-name" readonly class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-bank-gold text-sm font-mono focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="mt5-login" class="block text-xs text-bank-muted mb-1">MT5 Login ID</label>
+                        <input type="text" id="mt5-login" autocomplete="off" required value="84920194" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-bank-gold">
+                    </div>
+                    <div>
+                        <label for="mt5-pass" class="block text-xs text-bank-muted mb-1">Master Password</label>
+                        <input type="password" id="mt5-pass" autocomplete="off" required value="SecretPass2026!" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-bank-gold">
+                    </div>
+                    <div>
+                        <label for="mt5-server" class="block text-xs text-bank-muted mb-1">Broker Server Name</label>
+                        <input type="text" id="mt5-server" required value="ICMarkets-Demo01" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-bank-gold">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="mt5-mode" class="block text-xs text-bank-muted mb-1">Execution Routing Mode</label>
+                        <select id="mt5-mode" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-bank-gold">
+                            <option value="ECN">ECN Direct Market Access (DMA) - 0.0ms markup</option>
+                            <option value="STP">STP Straight Through Processing</option>
+                            <option value="MARKET">Institutional Market Execution</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="w-full bg-bank-gold hover:bg-bank-goldHover text-black font-bold py-3 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plug-circle-check"></i> Test & Establish Broker FIX Bridge
+                        </button>
+                    </div>
+                </form>
+
+                <div class="bg-bank-bg p-4 rounded-xl border border-bank-border space-y-2 font-mono text-xs">
+                    <div class="text-bank-muted uppercase text-[10px] font-bold tracking-wider">Live FIX Protocol Gateway Log</div>
+                    <div id="fix-log-box" class="h-28 overflow-y-auto space-y-1 text-bank-text">
+                        <div>[13:46:20 UTC] [INFO] MT5 Gateway initialized successfully on port 443.</div>
+                        <div>[13:46:21 UTC] [SUCCESS] Authenticated login #84920194 at ICMarkets.</div>
+                        <div>[13:46:22 UTC] [PING] Heartbeat ack received in 11.4ms.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Portfolio Optimization & Risk Engine -->
+        <div id="tab-portfolio" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Controls & Parameters -->
+            <div class="bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-bank-gold"></i> Mean-Variance Parameters
+                    </h3>
+                    <p class="text-xs text-bank-muted mt-1">Markowitz optimization with Ledoit-Wolf covariance shrinkage.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span class="text-bank-muted">Risk Aversion Factor ($\lambda$)</span>
+                            <span id="lambda-val" class="font-mono text-bank-gold font-bold">0.50</span>
+                        </div>
+                        <input type="range" id="risk-slider" min="0.1" max="2.0" step="0.05" value="0.5" oninput="updatePortfolioOptimization()" class="w-full accent-bank-gold cursor-pointer bg-bank-bg">
+                    </div>
+
+                    <div class="bg-bank-bg p-4 rounded-xl border border-bank-border space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-bank-muted">Expected Annual Return:</span>
+                            <span id="opt-return" class="font-mono text-bank-emerald font-semibold">+18.4%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-bank-muted">Annualized Volatility:</span>
+                            <span id="opt-vol" class="font-mono text-white font-semibold">9.2%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-bank-muted">Sharpe Ratio:</span>
+                            <span id="opt-sharpe" class="font-mono text-bank-gold font-semibold">2.84</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <span class="text-xs text-bank-muted font-medium">Constraints Applied:</span>
+                        <div class="text-xs text-white space-y-1 bg-bank-bg p-3 rounded-xl border border-bank-border font-mono">
+                            <div>✓ Fully Invested ($\sum w = 1.0$)</div>
+                            <div>✓ Long-Only ($w_i \ge 0$)</div>
+                            <div>✓ SMC Liquidity Filter Enabled</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="rebalancePortfolio()" class="w-full bg-bank-gold hover:bg-bank-goldHover text-black font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-rotate"></i> Rebalance Multi-Asset Basket
+                </button>
+            </div>
+
+            <!-- Asset Weight Distribution Chart & Table -->
+            <div class="lg:col-span-2 bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div class="relative h-[320px] w-full flex items-center justify-center">
+                    <canvas id="portfolioPieChart"></canvas>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Optimal Asset Weights</h4>
+                    <div id="weight-breakdown-list" class="space-y-3">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Institutional Execution Blotter -->
+        <div id="tab-execution" class="tab-content hidden space-y-6">
+            <div class="bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between mb-6 gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Live FIX Order Routing & TWAP/VWAP Blotter</h3>
+                        <p class="text-xs text-bank-muted">Real-time institutional execution telemetry and parent/child order slicing.</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="addSimulatedOrder()" class="bg-bank-gold hover:bg-bank-goldHover text-black font-semibold text-xs px-4 py-2 rounded-lg transition-all shadow-md flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Dispatch Test Algo Order
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-bank-bg text-bank-muted text-xs uppercase border-b border-bank-border">
+                            <tr>
+                                <th class="p-3">Order ID</th>
+                                <th class="p-3">Timestamp (UTC)</th>
+                                <th class="p-3">Symbol</th>
+                                <th class="p-3">Algo Type</th>
+                                <th class="p-3">Side</th>
+                                <th class="p-3">Size (Lots)</th>
+                                <th class="p-3">Fill Price</th>
+                                <th class="p-3">Slippage</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="execution-table-body" class="divide-y divide-bank-border text-xs">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Super-Admin Portal -->
+        <div id="tab-admin" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-shield text-rose-400"></i> License & Access Control
+                    </h3>
+                    <p class="text-xs text-bank-muted mt-1">Provision institutional keys and manage operational clearance.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="admin-new-email" class="block text-xs text-bank-muted mb-1">New User Email</label>
+                        <input type="email" id="admin-new-email" autocomplete="off" placeholder="quant@fund.com" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-bank-gold font-mono">
+                    </div>
+                    <div>
+                        <label for="admin-new-tier" class="block text-xs text-bank-muted mb-1">Assign Portal Level</label>
+                        <select id="admin-new-tier" class="w-full bg-bank-bg border border-bank-border rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-bank-gold">
+                            <option value="Hedge Fund Tier 1">Hedge Fund Tier 1</option>
+                            <option value="Treasury Bank">Treasury Bank Mode</option>
+                            <option value="Retail Algo Trader">Retail Algo Trader</option>
+                            <option value="Super Administrator">Super Administrator</option>
+                        </select>
+                    </div>
+                    <button onclick="provisionNewLicense()" class="w-full bg-bank-emerald hover:bg-bank-emeraldHover text-black font-bold py-3 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-key"></i> Generate & Issue License Key
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-bank-card border border-bank-border rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid id-badge text-bank-gold"></i> Active Institutional Licenses & Audit Log
+                    </h3>
+                    <p class="text-xs text-bank-muted mt-1">System-wide monitoring of authenticated sessions and broker connections.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-bank-bg text-bank-muted text-xs uppercase border-b border-bank-border">
+                            <tr>
+                                <th class="p-3">User Email</th>
+                                <th class="p-3">Portal Tier</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-license-table" class="divide-y divide-bank-border text-xs">
+                            <tr>
+                                <td class="p-3 text-white">quant.lead@btx-capital.com</td>
+                                <td class="p-3 text-bank-gold">Hedge Fund Tier 1</td>
+                                <td class="p-3 text-bank-emerald">ACTIVE</td>
+                                <td class="p-3"><button onclick="revokeLicense(this)" class="text-rose-400 hover:underline">Revoke</button></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 text-white">treasury@deutsche-bank.com</td>
+                                <td class="p-3 text-blue-400">Treasury Bank</td>
+                                <td class="p-3 text-bank-emerald">ACTIVE</td>
+                                <td class="p-3"><button onclick="revokeLicense(this)" class="text-rose-400 hover:underline">Revoke</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Modal / Notification Box -->
+    <div id="notification-modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-bank-card border border-bank-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center space-x-3 text-bank-gold">
+                <div class="w-10 h-10 rounded-full bg-bank-gold/10 flex items-center justify-center text-lg">
+                    <i id="modal-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold text-white">System Notification</h3>
+            </div>
+            <p id="modal-message" class="text-sm text-bank-muted leading-relaxed">Notification message goes here.</p>
+            <div class="flex justify-end pt-2">
+                <button autofocus onclick="closeModal()" class="bg-bank-gold hover:bg-bank-goldHover text-black font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md">
+                    Acknowledge
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Global State & Supported Brokers List
+        let currentAsset = 'XAUUSD';
+        let smcChartInstance = null;
+        let portfolioPieInstance = null;
+        let priceInterval = null;
+        let currentOperationalMode = 'hedge';
+
+        const supportedBrokers = [
+            { id: 'icmarkets', name: 'IC Markets (Global ECN)', server: 'ICMarkets-Demo01', latency: '11.2ms', status: 'Connected' },
+            { id: 'pepperstone', name: 'Pepperstone (Razor ECN)', server: 'Pepperstone-Live03', latency: '14.5ms', status: 'Ready' },
+            { id: 'vantage', name: 'Vantage FX (Raw ECN)', server: 'VantageFX-Server', latency: '18.1ms', status: 'Ready' },
+            { id: 'exness', name: 'Exness (Institutional Fx)', server: 'Exness-Trial9', latency: '9.8ms', status: 'Optimal' },
+            { id: 'ftmo', name: 'FTMO Proprietary Challenge', server: 'FTMO-Server02', latency: '12.4ms', status: 'Ready' },
+            { id: 'deriv', name: 'Deriv Synthetic & Forex', server: 'Deriv-Server', latency: '22.0ms', status: 'Ready' }
+        ];
+
+        let selectedBrokerId = 'icmarkets';
+
+        // Mock historical data generator per asset
+        const assetConfigs = {
+            'XAUUSD': { base: 2035.00, vol: 1.5, step: 0.4, decimals: 2, name: 'XAUUSD (Gold Spot)' },
+            'EURUSD': { base: 1.0850, vol: 0.0008, step: 0.0002, decimals: 4, name: 'EURUSD (Major FX)' },
+            'BTCUSD': { base: 64200.00, vol: 45.0, step: 12.0, decimals: 2, name: 'BTCUSD (Crypto Perp)' },
+            'US30': { base: 39150.00, vol: 25.0, step: 8.0, decimals: 2, name: 'US30 (Wall St Index)' }
+        };
+
+        let historicalPrices = {};
+
+        function initializeData() {
+            for (let symbol in assetConfigs) {
+                let cfg = assetConfigs[symbol];
+                let prices = [];
+                let current = cfg.base;
+                for (let i = 0; i < 40; i++) {
+                    current += (Math.random() - 0.48) * cfg.vol * 2;
+                    prices.push(parseFloat(current.toFixed(cfg.decimals)));
+                }
+                historicalPrices[symbol] = prices;
+            }
+        }
+
+        // Authentication Handler
+        function switchAuthMode(mode) {
+            if (mode === 'login') {
+                document.getElementById('form-login').classList.remove('hidden');
+                document.getElementById('form-register').classList.add('hidden');
+                document.getElementById('btn-auth-login').className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-bank-gold text-black shadow";
+                document.getElementById('btn-auth-register').className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-bank-muted hover:text-white";
+            } else {
+                document.getElementById('form-login').classList.add('hidden');
+                document.getElementById('form-register').classList.remove('hidden');
+                document.getElementById('btn-auth-login').className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-bank-muted hover:text-white";
+                document.getElementById('btn-auth-register').className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-bank-emerald text-black shadow";
+            }
+        }
+
+        function handleAuthSubmit(e, type) {
+            e.preventDefault();
+            document.getElementById('auth-portal').classList.add('hidden');
+            // Show Operational Mode Selector
+            document.getElementById('mode-selector-modal').classList.remove('hidden');
+        }
+
+        function selectOperationalMode(mode) {
+            currentOperationalMode = mode;
+            document.getElementById('mode-selector-modal').classList.add('hidden');
+
+            const badge = document.getElementById('portal-title-badge');
+            if (mode === 'hedge') {
+                badge.innerText = 'HEDGE FUND PORTAL';
+                badge.className = 'text-bank-gold font-light text-sm bg-bank-border/50 px-2 py-0.5 rounded';
+                showModal("Hedge Fund Portal Activated", "Loaded advanced multi-asset macro allocation, alpha generation metrics, and VaR stress testing.");
+            } else if (mode === 'bank') {
+                badge.innerText = 'TREASURY BANK PORTAL';
+                badge.className = 'text-blue-400 font-light text-sm bg-bank-border/50 px-2 py-0.5 rounded';
+                showModal("Bank Mode Activated", "Treasury liquidity management and interbank FIX routing matrices initialized.");
+            } else if (mode === 'retail') {
+                badge.innerText = 'RETAIL ALGO TRADER';
+                badge.className = 'text-bank-emerald font-light text-sm bg-bank-border/50 px-2 py-0.5 rounded';
+                showModal("Retail Trader Mode Activated", "Automated SMC & Grid bot engine ready for single/multi-pair deployment.");
+            } else if (mode === 'admin') {
+                badge.innerText = 'SUPER-ADMIN PORTAL';
+                badge.className = 'text-rose-400 font-light text-sm bg-bank-border/50 px-2 py-0.5 rounded';
+                switchNavTab('tab-admin');
+                showModal("Admin Section Activated", "Super-admin clearance granted for license and gateway management.");
+            }
+        }
+
+        function logoutSystem() {
+            // Return to auth portal
+            document.getElementById('auth-portal').classList.remove('hidden');
+            document.getElementById('mode-selector-modal').classList.add('hidden');
+            showModal("Session Terminated", "Secure token revoked. You have successfully logged out of the BTX Terminal.");
+        }
+
+        // Render Supported Brokers List
+        function renderBrokerList() {
+            const container = document.getElementById('broker-list-container');
+            container.innerHTML = '';
+            supportedBrokers.forEach(b => {
+                let isSelected = b.id === selectedBrokerId;
+                let borderClass = isSelected ? 'border-bank-gold bg-bank-gold/5' : 'border-bank-border bg-bank-bg hover:border-bank-gold/50';
+                container.innerHTML += `
+                    <div onclick="selectBroker('${b.id}')" class="border ${borderClass} p-3.5 rounded-xl cursor-pointer transition-all space-y-1 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-white font-bold text-xs">${b.name}</span>
+                            <span class="text-[10px] font-mono text-bank-emerald bg-bank-emerald/10 px-2 py-0.5 rounded">${b.status}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-bank-muted font-mono">
+                            <span>Server: ${b.server}</span>
+                            <span class="text-bank-gold">${b.latency}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            // Update inputs
+            let activeB = supportedBrokers.find(b => b.id === selectedBrokerId);
+            if (activeB) {
+                document.getElementById('cfg-broker-name').value = activeB.name;
+                document.getElementById('mt5-server').value = activeB.server;
+            }
+        }
+
+        function selectBroker(id) {
+            selectedBrokerId = id;
+            renderBrokerList();
+        }
+
+        // MT5 Connection Testing
+        function testMT5Connection(e) {
+            e.preventDefault();
+            const loginId = document.getElementById('mt5-login').value;
+            const server = document.getElementById('mt5-server').value;
+            const activeB = supportedBrokers.find(b => b.id === selectedBrokerId);
+            
+            const logBox = document.getElementById('fix-log-box');
+            const timeStr = new Date().toUTCString().slice(17, 25);
+            logBox.innerHTML += `<div>[${timeStr} UTC] [CONNECT] Handshaking with ${activeB.name} (${server})...</div>`;
+            logBox.innerHTML += `<div>[${timeStr} UTC] [SUCCESS] Login #${loginId} verified via FIX 4.4 protocol. Latency: ${activeB.latency}.</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+
+            document.getElementById('fix-indicator').className = "w-2.5 h-2.5 rounded-full bg-bank-emerald animate-pulse";
+            document.getElementById('fix-text').innerText = `CONNECTED (${activeB.latency})`;
+            showModal("Broker Bridge Connected", `Successfully established institutional ECN connection to ${activeB.name} (Account #${loginId}). Latency is nominal.`);
+        }
+
+        // Clock update
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('utc-clock').innerText = now.toUTCString().slice(17, 25) + " UTC";
+        }, 1000);
+
+        // Tab Switching
+        function switchNavTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            ['btn-tab-smc', 'btn-tab-brokers', 'btn-tab-portfolio', 'btn-tab-execution', 'btn-tab-admin'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all text-bank-muted hover:text-white flex items-center gap-2";
+            });
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) activeBtn.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-bank-gold text-black shadow-md flex items-center gap-2";
+
+            if (tabId === 'tab-portfolio' && !portfolioPieInstance) {
+                renderPortfolioChart();
+            }
+            if (tabId === 'tab-brokers') {
+                renderBrokerList();
+            }
+        }
+
+        // Initialize SMC Chart using Chart.js
+        function initSMCChart() {
+            const ctx = document.getElementById('smcChart').getContext('2d');
+            const prices = historicalPrices[currentAsset];
+            const labels = prices.map((_, i) => `T-${40 - i}`);
+
+            if (smcChartInstance) {
+                smcChartInstance.destroy();
+            }
+
+            smcChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: currentAsset + ' Price',
+                        data: prices,
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#d4af37'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#131b2c',
+                            titleColor: '#ffffff',
+                            bodyColor: '#c9d1d9',
+                            borderColor: '#22304a',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#22304a', borderColor: '#22304a' },
+                            ticks: { color: '#8b949e', font: { family: 'Inter', size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#22304a', borderColor: '#22304a' },
+                            ticks: { color: '#8b949e', font: { family: 'Inter', size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function changeAsset(symbol) {
+            currentAsset = symbol;
+            document.getElementById('chart-title').innerText = `${symbol} - M15 Quantitative SMC Stream`;
+            initSMCChart();
+            updateSMCAnalytics();
+        }
+
+        function updateSMCAnalytics() {
+            const cfg = assetConfigs[currentAsset];
+            const prices = historicalPrices[currentAsset];
+            const latest = prices[prices.length - 1];
+
+            document.getElementById('smc-fvg-range').innerText = `${(latest * 0.998).toFixed(cfg.decimals)} - ${(latest * 1.001).toFixed(cfg.decimals)}`;
+            document.getElementById('smc-ob-range').innerText = `${(latest * 0.995).toFixed(cfg.decimals)} (Institutional Demand)`;
+            document.getElementById('smc-liq-target').innerText = `${(latest * 1.012).toFixed(cfg.decimals)} (EQH Sweep)`;
+        }
+
+        // Live simulation tick
+        function startLiveStream() {
+            if (priceInterval) clearInterval(priceInterval);
+            priceInterval = setInterval(() => {
+                let cfg = assetConfigs[currentAsset];
+                let prices = historicalPrices[currentAsset];
+                let lastPrice = prices[prices.length - 1];
+                let delta = (Math.random() - 0.49) * cfg.vol;
+                let newPrice = parseFloat((lastPrice + delta).toFixed(cfg.decimals));
+
+                prices.shift();
+                prices.push(newPrice);
+
+                if (smcChartInstance) {
+                    smcChartInstance.data.datasets[0].data = prices;
+                    smcChartInstance.update('none');
+                }
+
+                // Randomly fluctuate portfolio equity slightly
+                let eqEl = document.getElementById('metric-equity');
+                let currentEq = 1248590.42 + (Math.random() - 0.48) * 120;
+                eqEl.innerText = '$' + currentEq.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }, 2000);
+        }
+
+        // Portfolio Optimization Chart & Calculations
+        function updatePortfolioOptimization() {
+            const lambda = parseFloat(document.getElementById('risk-slider').value);
+            document.getElementById('lambda-val').innerText = lambda.toFixed(2);
+
+            let returnVal = (15 + (2.0 - lambda) * 5.2).toFixed(1);
+            let volVal = (6.0 + lambda * 4.5).toFixed(1);
+            let sharpeVal = (3.2 - lambda * 0.5).toFixed(2);
+
+            document.getElementById('opt-return').innerText = `+${returnVal}%`;
+            document.getElementById('opt-vol').innerText = `${volVal}%`;
+            document.getElementById('opt-sharpe').innerText = sharpeVal;
+
+            renderPortfolioChart(lambda);
+        }
+
+        function renderPortfolioChart(lambda = 0.5) {
+            const ctx = document.getElementById('portfolioPieChart').getContext('2d');
+            
+            let w1 = Math.max(0.1, 0.45 - lambda * 0.1);
+            let w2 = Math.max(0.1, 0.25 + lambda * 0.05);
+            let w3 = Math.max(0.05, 0.20 - lambda * 0.05);
+            let w4 = 1.0 - (w1 + w2 + w3);
+
+            const weights = [w1, w2, w3, w4];
+            const labels = ['XAUUSD (Gold)', 'EURUSD', 'BTCUSD', 'US30'];
+            const colors = ['#d4af37', '#1f6feb', '#2ea043', '#8b949e'];
+
+            if (portfolioPieInstance) {
+                portfolioPieInstance.destroy();
+            }
+
+            portfolioPieInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: weights.map(w => (w * 100).toFixed(1)),
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#c9d1d9', font: { family: 'Inter', size: 11 } } }
+                    }
+                }
+            });
+
+            const listContainer = document.getElementById('weight-breakdown-list');
+            listContainer.innerHTML = '';
+            labels.forEach((lbl, idx) => {
+                let pct = (weights[idx] * 100).toFixed(1);
+                listContainer.innerHTML += `
+                    <div class="flex items-center justify-between bg-bank-bg p-3 rounded-xl border border-bank-border text-xs">
+                        <span class="text-white font-medium">${lbl}</span>
+                        <span class="font-mono text-bank-gold font-bold">${pct}%</span>
+                    </div>
+                `;
+            });
+        }
+
+        function rebalancePortfolio() {
+            showModal("Portfolio Rebalanced", "Markowitz Mean-Variance weights successfully synchronized with FIX routing gateway. All multi-asset legs adjusted with zero slippage.");
+        }
+
+        // Execution Blotter & Algorithmic Orders
+        const executionLogs = [
+            { id: 'ORD-9821', time: '13:42:10', symbol: 'XAUUSD', algo: 'TWAP (15m)', side: 'BUY', size: '2.50', price: '2,034.80', slip: '0.1 pips', status: 'FILLED' },
+            { id: 'ORD-9820', time: '13:38:02', symbol: 'EURUSD', algo: 'Market', side: 'SELL', size: '5.00', price: '1.0852', slip: '0.0 pips', status: 'FILLED' },
+            { id: 'ORD-9819', time: '13:30:15', symbol: 'BTCUSD', algo: 'Limit (FVG)', side: 'BUY', size: '0.45', price: '64,150.00', slip: '0.2 pips', status: 'WORKING' },
+            { id: 'ORD-9818', time: '13:15:00', symbol: 'US30', algo: 'VWAP', side: 'BUY', size: '1.20', price: '39,140.00', slip: '0.05 pips', status: 'FILLED' }
+        ];
+
+        function renderExecutionTable() {
+            const tbody = document.getElementById('execution-table-body');
+            tbody.innerHTML = '';
+            executionLogs.forEach(ord => {
+                let sideColor = ord.side === 'BUY' ? 'text-bank-emerald' : 'text-rose-400';
+                let statusColor = ord.status === 'FILLED' ? 'text-bank-emerald bg-bank-emerald/10 px-2 py-0.5 rounded' : 'text-bank-gold bg-bank-gold/10 px-2 py-0.5 rounded';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-bank-cardHover transition-all">
+                        <td class="p-3 text-white font-bold">${ord.id}</td>
+                        <td class="p-3 text-bank-muted">${ord.time}</td>
+                        <td class="p-3 text-white">${ord.symbol}</td>
+                        <td class="p-3 text-bank-muted">${ord.algo}</td>
+                        <td class="p-3 font-bold ${sideColor}">${ord.side}</td>
+                        <td class="p-3 text-white">${ord.size}</td>
+                        <td class="p-3 text-white">${ord.price}</td>
+                        <td class="p-3 text-bank-muted">${ord.slip}</td>
+                        <td class="p-3"><span class="${statusColor}">${ord.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function executeAlgorithmicOrder(side) {
+            let id = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+            let time = new Date().toUTCString().slice(17, 25);
+            let cfg = assetConfigs[currentAsset];
+            let price = historicalPrices[currentAsset].slice(-1)[0];
+
+            executionLogs.unshift({
+                id: id,
+                time: time,
+                symbol: currentAsset,
+                algo: 'SMC Quant Execution',
+                side: side,
+                size: '1.50',
+                price: price.toFixed(cfg.decimals),
+                slip: '0.02 pips',
+                status: 'FILLED'
+            });
+
+            renderExecutionTable();
+            showModal("Algorithmic Order Executed", `Successfully routed ${side} 1.50 lots of ${currentAsset} via Smart Money Concepts FVG/OB alignment matrix.`);
+        }
+
+        function addSimulatedOrder() {
+            executeAlgorithmicOrder(Math.random() > 0.5 ? 'BUY' : 'SELL');
+        }
+
+        // Admin license provision
+        function provisionNewLicense() {
+            let email = document.getElementById('admin-new-email').value;
+            let tier = document.getElementById('admin-new-tier').value;
+            if (!email) {
+                showModal("Validation Error", "Please provide a valid user email address.");
+                return;
+            }
+            const tbody = document.getElementById('admin-license-table');
+            tbody.innerHTML += `
+                <tr>
+                    <td class="p-3 text-white">${email}</td>
+                    <td class="p-3 text-bank-gold">${tier}</td>
+                    <td class="p-3 text-bank-emerald">ACTIVE</td>
+                    <td class="p-3"><button onclick="revokeLicense(this)" class="text-rose-400 hover:underline">Revoke</button></td>
+                </tr>
+            `;
+            showModal("License Issued", `Institutional key successfully generated and assigned to ${email} (${tier}).`);
+            document.getElementById('admin-new-email').value = '';
+        }
+
+        function revokeLicense(btn) {
+            let row = btn.closest('tr');
+            row.remove();
+            showModal("License Revoked", "Active session token invalidated and broker access disconnected.");
+        }
+
+        // Emergency Kill Switch
+        function triggerKillSwitch() {
+            showModal("EMERGENCY KILL SWITCH ACTIVATED", "All active algorithmic parent orders canceled, open exposure flattened across liquidity venues, and FIX gateway isolated.");
+            document.getElementById('metric-smc').innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-ban"></i> SYSTEM LOCKED</span>`;
+            document.getElementById('fix-indicator').className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+            document.getElementById('fix-text').innerText = "DISCONNECTED (KILLED)";
+        }
+
+        // Modal Controls
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('notification-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('notification-modal').classList.add('hidden');
+        }
+
+        // Initialization on Load
+        window.onload = function() {
+            initializeData();
+            initSMCChart();
+            updateSMCAnalytics();
+            renderExecutionTable();
+            renderBrokerList();
+            startLiveStream();
+        };
+    </script>
+<script src="js/btx-guardrails.js" defer></script>
+<script src="js/btx-a11y.js" defer></script>
+<script src="js/btx-ui.js" defer></script>
+</body>
+</html>
